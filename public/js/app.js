@@ -1,10 +1,33 @@
 $(function () {
 
     var map = initialize_gmaps();
-
+    
     var days = [
         []
     ];
+
+    // $.ajax({
+    //     method: 'GET',
+    //     url: '/api/days',
+    //     success: function(data) {
+    //         var hotelId, dayActivityArray, dayRestaurantArray; 
+    //         data.forEach(function(day) {
+
+    //             hotelId = day.hotel; //check undefined
+    //             dayActivityArray = day.activites; 
+    //             dayRestaurantArray = day.restaurants; 
+
+    //             days[day.number - 1].push( {} ); 
+    //         }); 
+    //         days[currentDay - 1].push({place: placeObj, marker: createdMapMarker, section: sectionName});
+
+    //     },
+    //     error: function(errorObj) {
+    //         console.log(errorObj);
+    //     }
+    // });
+
+
 
     var currentDay = 1;
 
@@ -20,19 +43,20 @@ $(function () {
     var $dayTitle = $('#day-title');
     var $addPlaceButton = $('.add-place-button');
 
-    var createItineraryItem = function (placeName) {
+    var createItineraryItem = function (placeName, _id) {
 
         var $item = $('<li></li>');
         var $div = $('<div class="itinerary-item"></div>');
 
         $item.append($div);
         $div.append('<span class="title">' + placeName + '</span>');
-        $div.append('<button class="btn btn-xs btn-danger remove btn-circle">x</button>');
+        $div.append('<button class="btn btn-xs btn-danger remove btn-circle" data-id=' + _id + '>x</button>');
 
         return $item;
 
     };
 
+    // DRAW BUTTONS TO SCREEN 
     var setDayButtons = function () {
         $dayButtons.find('button').not('.add-day').remove();
         days.forEach(function (day, index) {
@@ -130,6 +154,13 @@ $(function () {
 
     };
 
+    var getAPlaceObject = function(sectionName, placeName) {
+        return window['all_' + sectionName].filter(function(placeObj) {
+            return placeObj.name === placeName; 
+        })[0]; 
+    }; 
+
+    // ADD NEW PLACE TO DAY ITINERARY - ADD LOCALLY AND ON DB
     $addPlaceButton.on('click', function () {
 
         var $this = $(this);
@@ -142,10 +173,26 @@ $(function () {
             icon: placeMapIcons[sectionName]
         });
 
-        days[currentDay - 1].push({place: placeObj, marker: createdMapMarker, section: sectionName});
-        $listToAppendTo.append(createItineraryItem(placeName));
+        // get place Id
+        var placeObj = getAPlaceObject(sectionName, placeName); 
 
-        mapFit();
+        console.log(placeObj._id); 
+        // ajax PUT
+        $.ajax( {
+            method: 'PUT', 
+            url: '/api/days/' + currentDay.toString(),
+            data: { sectionName: sectionName, _id: placeObj._id },
+            success: function(updatedDayObj) {
+                console.log('put success, response: ', updatedDayObj); 
+                days[currentDay - 1].push({place: placeObj, marker: createdMapMarker, section: sectionName});
+                $listToAppendTo.append(createItineraryItem(placeName, placeObj._id));
+                mapFit();
+            }, 
+            error: function(err) {
+                console.log(err.message); 
+            } 
+        });
+
 
     });
 
