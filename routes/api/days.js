@@ -82,14 +82,34 @@ Router.route('/days/:id')
             .then(null, next);
     })
 
-Router.route('/days/:id/hotels')
-    .get(function(req, res, next) {});
+Router.route('/days/:id/:sectionName')
 
-Router.route('/days/:id/restaurants')
-    .get(function(req, res, next) {});
+    .put(function(req, res, next) {
+        var mapObject = {
+            hotels: 'hotel',
+            restaurants: 'restaurants',
+            activities: 'activities'
+        }
+        var sectionName = mapObject[req.params.sectionName]; 
+        Days.findOne({number: req.params.id}).exec()
+        .then(function(day) {
+            if( sectionName === 'hotel') {
+                delete day['hotel']; 
+            } else {
+                day = day[sectionName].filter(function(place, index) {
+                    return place._id !== req.body;
+                })
+            }
+            return day.save()
+        })
+        .then(function(day) {
+            res.status(200).send(day); 
+        })
+        .then(null, next); 
 
-Router.route('/days/:id/activities')
-    .get(function(req, res, next) {});
+
+
+    });
 
 
 module.exports = Router;

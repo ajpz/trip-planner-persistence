@@ -62,14 +62,14 @@ $(function() {
     var $dayTitle = $('#day-title');
     var $addPlaceButton = $('.add-place-button');
 
-    var createItineraryItem = function(placeName, _id) {
+    var createItineraryItem = function(placeName) {
 
         var $item = $('<li></li>');
         var $div = $('<div class="itinerary-item"></div>');
 
         $item.append($div);
         $div.append('<span class="title">' + placeName + '</span>');
-        $div.append('<button class="btn btn-xs btn-danger remove btn-circle" data-id=' + _id + '>x</button>');
+        $div.append('<button class="btn btn-xs btn-danger remove btn-circle">x</button>');
 
         return $item;
 
@@ -219,7 +219,10 @@ $(function() {
                     marker: createdMapMarker,
                     section: sectionName
                 });
-                $listToAppendTo.append(createItineraryItem(placeName, placeObj._id));
+                var $item = createItineraryItem(placeName); 
+                $item.find('button').attr('data-id', placeObj._id); 
+
+                $listToAppendTo.append($item);
                 mapFit();
             },
             error: function(err) {
@@ -237,11 +240,20 @@ $(function() {
         var nameOfPlace = $this.siblings('span').text();
         var indexOfThisPlaceInDay = getIndexOfPlace(nameOfPlace, days[currentDay - 1]);
         var placeInDay = days[currentDay - 1][indexOfThisPlaceInDay];
+        console.log('in placeLists: ', $listItem); 
+        var sectionName = $listItem.attr('id').split('-')[0]; 
 
-        placeInDay.marker.setMap(null);
-        days[currentDay - 1].splice(indexOfThisPlaceInDay, 1);
-        $listItem.remove();
-
+        $.ajax({
+            method: 'PUT', 
+            url: 'api/days/' + currentDay + '/' + sectionName, 
+            data: $this.attr('data-id'), 
+            sucess: function(response) {
+                console.log('Remove place response: ', response); 
+                placeInDay.marker.setMap(null);
+                days[currentDay - 1].splice(indexOfThisPlaceInDay, 1);
+                $listItem.remove();
+            } 
+        })
     });
 
     $dayButtons.on('click', '.day-btn', function() {
