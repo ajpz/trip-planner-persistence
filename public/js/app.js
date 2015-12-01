@@ -5,25 +5,29 @@ $(function() {
     var days = [
         []
     ];
-    $.ajax({
-        method: 'DELETE',
-        url: '/api/days/doomswitch',
-        success: function(response) {
-            console.log(response);
-            $.post('api/days', { number: 1}, function(response) {
-                    // $addDayButton.before($newDayButton);
-                    // days.push([]);
-                    // setDayButtons();
-                    // setDay(1);
-                })
-                .fail(function(err) {
-                    console.error(err);
-                });
-        },
-        error: function(err) {
-            console.log(err.message);
-        }
-    });
+
+    // wipe the database clean when the app is refreshed
+    // need to change this
+    // $.ajax({
+    //     method: 'DELETE',
+    //     url: '/api/days/doomswitch',
+    //     success: function(response) {
+    //         console.log(response);
+    //         $.post('api/days', { number: 1}, function(response) {
+    //                 // $addDayButton.before($newDayButton);
+    //                 // days.push([]);
+    //                 // setDayButtons();
+    //                 // setDay(1);
+    //             console.log('success with initial post: ', response); 
+    //             })
+    //             .fail(function(err) {
+    //                 console.error(err);
+    //             });
+    //     },
+    //     error: function(err) {
+    //         console.log(err.message);
+    //     }
+    // });
 
     // $.ajax({
     //     method: 'GET',
@@ -123,6 +127,7 @@ $(function() {
     var removeDay = function(dayNum) {
 
         if (days.length === 1) return;
+        // DELETE requests sent to remove an entire day object
         $.ajax({
             method: "DELETE",
             url: "/api/days/" + dayNum.toString(),
@@ -200,16 +205,17 @@ $(function() {
             icon: placeMapIcons[sectionName]
         });
 
-        // get place Id
+        // get place Id - either a hotel, restaurant or activity
         var placeObj = getAPlaceObject(sectionName, placeName);
 
         console.log(placeObj._id);
-        // ajax PUT
+        // PUT - adds a place to a day's itinerary
+        // route is /api/days/:id/:sectionName 
         $.ajax({
             method: 'PUT',
-            url: '/api/days/' + currentDay.toString(),
+            url: '/api/days/' + currentDay.toString() + '/' + sectionName,
             data: {
-                sectionName: sectionName,
+                // sectionName: sectionName,
                 _id: placeObj._id
             },
             success: function(updatedDayObj) {
@@ -240,14 +246,18 @@ $(function() {
         var nameOfPlace = $this.siblings('span').text();
         var indexOfThisPlaceInDay = getIndexOfPlace(nameOfPlace, days[currentDay - 1]);
         var placeInDay = days[currentDay - 1][indexOfThisPlaceInDay];
-        console.log('in placeLists: ', $listItem); 
-        var sectionName = $listItem.attr('id').split('-')[0]; 
 
+        // parse sectionName from DOM
+        var sectionName = $listItem.parent().parent().attr('id').split('-')[0]; 
+        console.log('in placeLists: ', sectionName); 
+        console.log('id is: ', $this.attr('data-id')); 
+
+        // ajax PUT to remove a place from a day's itinerary 
         $.ajax({
-            method: 'PUT', 
+            method: 'DELETE', 
             url: 'api/days/' + currentDay + '/' + sectionName, 
-            data: $this.attr('data-id'), 
-            sucess: function(response) {
+            data: { _id : $this.attr('data-id') }, 
+            success: function(response) {
                 console.log('Remove place response: ', response); 
                 placeInDay.marker.setMap(null);
                 days[currentDay - 1].splice(indexOfThisPlaceInDay, 1);
@@ -264,10 +274,11 @@ $(function() {
 
         var currentNumOfDays = days.length;
         var $newDayButton = createDayButton(currentNumOfDays + 1);
-        var data = {
-            number: parseInt(currentNumOfDays + 1)
-        };
 
+        // data to be sent to server for the new day
+        var data = { number: currentNumOfDays + 1 };
+
+        // POSTs to /api/days --> should find or create a day with "number"
         $.post('api/days', data, function(response) {
                 console.log('post response: ', response);
                 $addDayButton.before($newDayButton);

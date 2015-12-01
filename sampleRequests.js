@@ -34,7 +34,26 @@ $.ajax({
     }
 });
 
-
+$.ajax({
+    method: 'DELETE',
+    url: '/api/days/doomswitch',
+    success: function(response) {
+        console.log(response);
+        // $.post('api/days', { number: 1}, function(response) {
+        //         // $addDayButton.before($newDayButton);
+        //         // days.push([]);
+        //         // setDayButtons();
+        //         // setDay(1);
+        //     console.log('success with initial post: ', response); 
+        //     })
+        //     .fail(function(err) {
+        //         console.error(err);
+        //     });
+    },
+    error: function(err) {
+        console.log(err.message);
+    }
+});
 
 
 $.get('/api/days', function (data) {console.log('GET response data', data)})

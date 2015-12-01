@@ -24,4 +24,19 @@ var DaySchema = new mongoose.Schema({
     }
 });
 
+DaySchema.statics.findOrCreate = function(dayToAdd) {
+    var _this = this; 
+    return _this.findOne( { number : dayToAdd.number } ).exec()
+        .then(function(day) {    
+            console.log('find or create: ', day); 
+            if(day) {
+                return day; 
+            } else {
+                return _this.create( { 
+                    number : dayToAdd.number 
+                });
+            }
+        })
+}; 
+
 module.exports = mongoose.model('Day', DaySchema);

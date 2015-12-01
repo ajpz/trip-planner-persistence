@@ -19,19 +19,18 @@ Router.route('/days')
         })
         .then(null, next);
     })
-    // create new empty day document based on day-number
+    // POST to /days creates or finds a day with the provided "number"
+    // assumes req.body only has number property
     .post(function(req, res, next) {
-        req.body.number = parseInt(req.body.number);
-        console.log("req body", req.body);
-        Days.create(req.body)
-        .then(function(message) {
-            console.log(message);
-            res.send(message);
+        Days.findOrCreate( { number: parseInt(req.body.number) } )
+        .then(function(day) {
+            res.status(200).send(day); 
         })
-        .then(null, next);
+        .then(null, next); 
     });
 
 Router.route('/days/doomswitch')
+    // DELETE everything from the 'Days' collection
     .delete(function(req,res,next) {
         Days.remove({})
         .then(function success(response) {
@@ -40,41 +39,17 @@ Router.route('/days/doomswitch')
         .then(null, next);
     });
 
-Router.route('/days/:id')
-    // get a single day document
+Router.route('/days/:number')
+    // GETs a single days data
     .get(function(req, res, next) {
-        Days.find({number: req.params.id}).exec()
+       Days.find({number: req.params.number}).exec()
             .then(function(day) {
                 res.status(200).send(day);
             })
-            .then(null, next);
+            .then(null, next); 
     })
-    .put(function(req, res, next) {
-        var mapObject = {
-            hotels: 'hotel',
-            restaurants: 'restaurants',
-            activities: 'activities'
-        }
-        // number: 1, hotel: _id,  restaurants: [_ids...], activities: [_ids...]
-        Days.findOne( {number: req.params.id} ).exec()
-            .then(function(day) {
-                console.log(day);
-                var sectionName = mapObject[req.body.sectionName];
-                if( sectionName === 'hotel') {
-                    day['hotel'] = req.body._id;
-                } else {
-                    day[sectionName].push(req.body._id);
-                }
-                return day.save()
-            })
-            .then(function(updatedDay) {
-                res.status(200).send(updatedDay);
-            })
-            .then(null, next);
-    })
-    // delete a day document from db
     .delete(function(req, res, next) {
-        Days.remove( { number: req.params.id } )
+        Days.remove( { number: req.params.number } )
             .then(function(message) {
                 console.log(message);
                 res.status(200).send(message);
@@ -82,22 +57,44 @@ Router.route('/days/:id')
             .then(null, next);
     })
 
-Router.route('/days/:id/:sectionName')
-
+Router.route('/days/:number/:placeType')
     .put(function(req, res, next) {
-        var mapObject = {
-            hotels: 'hotel',
-            restaurants: 'restaurants',
-            activities: 'activities'
-        }
-        var sectionName = mapObject[req.params.sectionName]; 
-        Days.findOne({number: req.params.id}).exec()
+        // get a single day document
+        var number = req.params.number, 
+            placeType = req.params.placeType,
+            place_id = req.body._id;  
+
+        Days.findOrCreate( { number: number } )
+            .then(function(day) {
+                if(placeType === 'hotels') {
+                    day['hotel'] = place_id; 
+                } else {
+                    day[placeType].push(place_id); 
+                }
+                return day.save(); 
+            })
+            .then(function(day) {
+                res.status(200).send(day); 
+            })
+            .then(null, next); 
+    })
+    .delete(function(req, res, next) {
+        // deletes a single place from a day document
+        var number = req.params.number, 
+            placeType = req.params.placeType,
+            place_id = req.body._id; //check this  
+
+        console.log('Params (number, placeType, place_id):', number, placeType, place_id); 
+        Days.findOne( { number : number } ).exec()
         .then(function(day) {
-            if( sectionName === 'hotel') {
-                delete day['hotel']; 
+            if( placeType === 'hotels') {
+                if(day.hotel.toString() === place_id) {
+                    day.hotel = null; 
+                    // delete day.hotel;  
+                }
             } else {
-                day = day[sectionName].filter(function(place, index) {
-                    return place._id !== req.body;
+                day[placeType] = day[placeType].filter(function(_id) {
+                    return _id.toString() !== place_id;
                 })
             }
             return day.save()
@@ -106,10 +103,6 @@ Router.route('/days/:id/:sectionName')
             res.status(200).send(day); 
         })
         .then(null, next); 
-
-
-
     });
-
 
 module.exports = Router;
