@@ -11,7 +11,7 @@ var express = require('express'),
 // })
 
 Router.route('/days')
-    // get all day documents
+    // GET all day documents
     .get(function(req, res, next) {
         Days.find({}).exec()
         .then(function(days) {
@@ -40,7 +40,7 @@ Router.route('/days/doomswitch')
     });
 
 Router.route('/days/:number')
-    // GETs a single days data
+    // GETs a single day's data
     .get(function(req, res, next) {
        Days.find({number: req.params.number}).exec()
             .then(function(day) {
@@ -48,6 +48,7 @@ Router.route('/days/:number')
             })
             .then(null, next); 
     })
+    // DELETEs an entire day
     .delete(function(req, res, next) {
         Days.remove( { number: req.params.number } )
             .then(function(message) {
@@ -58,8 +59,8 @@ Router.route('/days/:number')
     })
 
 Router.route('/days/:number/:placeType')
+    // PUTs a new place on a day's itinerary
     .put(function(req, res, next) {
-        // get a single day document
         var number = req.params.number, 
             placeType = req.params.placeType,
             place_id = req.body._id;  
